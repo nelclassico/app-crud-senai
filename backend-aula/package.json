@@ -4,9 +4,25 @@
   },
   "dependencies": {
     "axios": "^1.9.0",
-    "json-server": "^1.0.0-beta.3"
+    "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "json-server": "^1.0.0-beta.3",
+    "jsonwebtoken": "^9.0.2",
+    "sqlite3": "^5.1.7"
   },
   "scripts": {
-    "start": "json-server --watch db.json --port 3001"
-  }
+    "start": "node index.js", 
+    "dev": "nodemon index.js"
+  },
+
+  "name": "backend-aula",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
 }

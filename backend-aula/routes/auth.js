@@ -1,71 +1,68 @@
 // Importar as bibliotecas necessárias
 const express = require('express');
-const bcrypt = require('bcryptjs'); //protege as senhas
-const criachaves = require('jsonwebtoken'); //cria chaves
-const sqlite3 = require('sqlite3').verbose(); //banco sqlite
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken'); // Corrigido o nome do módulo
 
+const router = express.Router();
+const JWT_SECRET = 'chave-secreta-super-segura'; // Chave secreta 
 
-//conecta ao bd
-const db = new sqlite3.Database('./tarefas.db', (err) => 
-    {
-        if (err) {
-            console.error("Erro ao conectar ao Sqlite:", err);
-        } else {
-            console.error("Conectado ao Sqlite:");
+// Função para configurar o roteador com a conexão do banco de dados
+module.exports = (db) => {
+    // Rota para cadastro de usuário
+    router.post('/registro', (req, res) => {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email e senha são obrigatórios' });
         }
-    }
-);
 
-const router = express.Router(); //cria o roteador
-const JWT_SECRET = 'chave-secreta-super-segura';//cria chave secreta
+        // Verifica se o email já existe
+        db.get('SELECT * FROM usuarios WHERE email = ?', [email], (err, usuario) => {
+            if (err) {
+                return res.status(500).json({ message: 'Erro no servidor' });
+            }
+            if (usuario) {
+                return res.status(400).json({ message: 'Este email já está cadastrado' });
+            }
 
+            // Criptografa a senha
+            const hashedPassword = bcrypt.hashSync(password, 10);
 
-//rota para cadastro de usuário
-router.post('/registro', (res, req) => 
-{
-    const {email, password} = req.body;
-    if(!email || !password){
-        return res.status(400).json({message: 'Email e senha são obrigatorios'});
-    }
-    //verifica se o email já existe
-    db.get('SELECT * FROM WHERE email = ?', [email], (err, usuario) => {
-        if(err){
-            return res.status(500).json({message: 'Erro no servidor'});
-        }
-        if(row){
-            return res.status(500).json({message: 'Este email já está cadastrado'});
-        }
-        //criptografa senha
-        const hashedPassword = bcrypt.hashSync(password, 10)
-        
-        //insere usuário
-        db.run('INSERT INTO usuarios (email, senha) VALUES (?, ?)', [email, hashedPassword], function (err){
-          if(err){
-                return res.status(500).json({message: 'Erro no servidor'});
-            } 
-          res.status(500).json({message: 'Cadastrado com sucesso'});
+            // Insere o usuário
+            db.run('INSERT INTO usuarios (email, password) VALUES (?, ?)', [email, hashedPassword], function (err) {
+                if (err) {
+                    return res.status(500).json({ message: 'Erro ao cadastrar usuário' });
+                }
+                res.status(201).json({ message: 'Cadastrado com sucesso', userId: this.lastID });
+            });
         });
     });
-});
 
-//ROTA PARA LOGIN
-router.post('/login', (req, res) => {
-    const {email, password} = req.body;
-    if(!email || !password){
-        return res.status(400).json({message: 'Email e senha são obrigatorios'});
-    }
-    //verifica se o email já existe
-    db.get('SELECT * FROM WHERE email = ?', [email], (err, usuario) => {
-        if(err){
-            return res.status(500).json({message: 'Erro no servidor'});
+    // Rota para login
+    router.post('/login', (req, res) => {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email e senha são obrigatórios' });
         }
-        if(!usuario || !bcrypt.compareSync(password, usuarios.password)){
-            return res.status(401).json({message: 'Email ou senha incorretos'});
-        }
-        // cria token
-        const token = jwt.sign({userId}, JWT_SECRET, { expiresIn: '1h'});
-        res.json({message: 'Login bem sucedido', token, userId: usuarios.id});
+
+        // Verifica se o email existe
+        db.get('SELECT * FROM usuarios WHERE email = ?', [email], (err, usuario) => {
+            if (err) {
+                return res.status(500).json({ message: 'Erro no servidor' });
+            }
+            if (!usuario) {
+                return res.status(401).json({ message: 'Email ou senha incorretos' });
+            }
+
+            // Verifica a senha
+            if (!bcrypt.compareSync(password, usuario.password)) {
+                return res.status(401).json({ message: 'Email ou senha incorretos' });
+            }
+
+            // Cria o token JWT
+            const token = jwt.sign({ userId: usuario.id }, JWT_SECRET, { expiresIn: '1h' });
+            res.json({ message: 'Login bem-sucedido', token, userId: usuario.id });
+        });
     });
-});
 
-module.exports = router;
+    return router;
+};

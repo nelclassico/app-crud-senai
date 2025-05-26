@@ -1,120 +1,142 @@
-9const express = require('express');
+// Aula: Configurando rotas para CRUD de tarefas com autenticação JWT
+// Objetivo: Criar, listar, atualizar e excluir tarefas no banco SQLite
+
+// Importa o módulo Express para criar roteadores
+const express = require('express');
+// Importa o jsonwebtoken para verificar tokens JWT
 const jwt = require('jsonwebtoken');
 
+// Cria uma instância do roteador Express
 const router = express.Router();
-const JWT_SECRET = 'chave-secreta-super-segura'; // Chave secreta 
+// Define a chave secreta para verificar tokens JWT
+const JWT_SECRET = 'chave-secreta-super-segura';
 
-//Middleware para verificação de token
+// Middleware para verificar o token JWT
 const authenticateToken = (req, res, next) => {
+    // Extrai o cabeçalho Authorization
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; //Formato: Bearer
-
-    if (!token){
-        return res.status(401).json({ message: 'Acesso negado, Token não fornecido'});
+    // Extrai o token (formato: Bearer <token>)
+    const token = authHeader && authHeader.split(' ')[1];
+    // Verifica se o token foi fornecido
+    if (!token) {
+        // Retorna erro 401 se token ausente
+        return res.status(401).json({ message: 'Acesso negado. Token não fornecido.' });
     }
-
     try {
-        // verificar e decodificar o token
+        // Verifica e decodifica o token
         const decoded = jwt.verify(token, JWT_SECRET);
-        //adici9ona o id decodificado
+        // Adiciona o userId ao objeto req
         req.user = decoded;
-        // chama o proximo cabecalho
+        // Chama o próximo middleware
         next();
     } catch (err) {
-        //retornar o erro caso o token fo r inválido
-        return res.status(403).json({ message: 'Token Inválido ou expirado'});
+        // Retorna erro 403 se token inválido
+        return res.status(403).json({ message: 'Token inválido ou expirado.' });
     }
 };
 
+// Exporta uma função que recebe a conexão do banco
 module.exports = (db) => {
-    // Definir rota pra criar nova tarefa
+    // Rota POST para criar uma tarefa
     router.post('/', authenticateToken, (req, res) => {
-        // Extraindo o título do corpo da requisição
+        // Extrai o título do corpo da requisição
         const { titulo } = req.body;
-        //extrair o userid
+        // Extrai o userId do token
         const userId = req.user.userId;
-
-        //verifica se o título foi fornecido
+        // Verifica se o título foi fornecido
         if (!titulo) {
-            return res.status(400).json({ message: 'O título da tarefa é obrigatório'});
+            // Retorna erro 400
+            return res.status(400).json({ message: 'O título da tarefa é obrigatório' });
         }
-
-        // Insere o usuário
+        // Insere a tarefa no banco
         db.run('INSERT INTO tarefas (titulo, userId) VALUES (?, ?)', [titulo, userId], function (err) {
+            // Verifica se houve erro
             if (err) {
-                return res.status(500).json({ message: 'Erro ao inserir a tarefa' });
+                // Loga o erro
+                console.error('Erro ao inserir tarefa:', err);
+                // Retorna erro 500
+                return res.status(500).json({ message: 'Erro ao inserir tarefa' });
             }
-            res.status(201).json({ message: 'Tarefa inserida com sucesso com sucesso', tarefaId: this.lastID });
+            // Retorna sucesso com ID da tarefa
+            res.status(201).json({ message: 'Tarefa inserida com sucesso', tarefaId: this.lastID });
         });
     });
 
-    // rota para listar todas as tarefas
+    // Rota GET para listar tarefas do usuário
     router.get('/', authenticateToken, (req, res) => {
-        //extrair o userid
+        // Extrai o userId do token
         const userId = req.user.userId;
-
-        db.all('SELECT * FROM tarefas WHERE userId = ?', [userId], (err, row) => {
+        // Consulta todas as tarefas do usuário
+        db.all('SELECT * FROM tarefas WHERE userId = ?', [userId], (err, rows) => {
+            // Verifica se houve erro
             if (err) {
-                return res.status(500).json({ message: 'Erro ao listar as tarefas' });
+                // Loga o erro
+                console.error('Erro ao listar tarefas:', err);
+                // Retorna erro 500
+                return res.status(500).json({ message: 'Erro ao listar tarefas' });
             }
-
-            //retornar a lista de tarefas
-            res.json({tarefas: row});
+            // Retorna a lista de tarefas
+            res.json({ tarefas: rows });
         });
     });
 
-    router.put('/', authenticateToken, (req, res) => {
-        //Extrair o id da tarefa dos paremetros
-        const {id} = req.params;
-
-        // Extraindo o título do corpo da requisição
+    // Rota PUT para atualizar uma tarefa
+    router.put('/:id', authenticateToken, (req, res) => {
+        // Extrai o ID da tarefa dos parâmetros
+        const { id } = req.params;
+        // Extrai o título do corpo da requisição
         const { titulo } = req.body;
-
-        //extrair o userid
+        // Extrai o userId do token
         const userId = req.user.userId;
-
-         //verifica se o título foi fornecido
+        // Verifica se o título foi fornecido
         if (!titulo) {
-            return res.status(400).json({ message: 'O título da tarefa é obrigatório'});
+            // Retorna erro 400
+            return res.status(400).json({ message: 'O título da tarefa é obrigatório' });
         }
-
-        // Insere o usuário
-        db.run('UPDATE tarefas SET titulo = ? WHERE id = ?', [titulo, id, userId], function (err) {
-            //verifica se houve algum erro
+        // Atualiza a tarefa no banco
+        db.run('UPDATE tarefas SET titulo = ? WHERE id = ? AND userId = ?', [titulo, id, userId], function (err) {
+            // Verifica se houve erro
             if (err) {
-                return res.status(500).json({ message: 'Erro ao editar a tarefa' });
+                // Loga o erro
+                console.error('Erro ao atualizar tarefa:', err);
+                // Retorna erro 500
+                return res.status(500).json({ message: 'Erro ao atualizar tarefa' });
             }
-            // verificar se a tarefa foi atualizada
-            if (this.change === 0) {
-                return res.status(404).json({ message: 'Tarefa não encontrada' });
+            // Verifica se alguma tarefa foi atualizada
+            if (this.changes === 0) {
+                // Retorna erro 404
+                return res.status(404).json({ message: 'Tarefa não encontrada ou não pertence ao usuário' });
             }
-            res.json({ message: 'Tarefa atualziada com sucesso'});                   
+            // Retorna sucesso
+            res.json({ message: 'Tarefa atualizada com sucesso' });
         });
     });
 
-    //DEFINE A ROTA PARA EXCLUIR TAREFAS
-     router.delete('/', authenticateToken, (req, res) => {
-        //Extrair o id da tarefa dos paremetros
-        const {id} = req.params;
-
-        //extrair o userid
+    // Rota DELETE para excluir uma tarefa
+    router.delete('/:id', authenticateToken, (req, res) => {
+        // Extrai o ID da tarefa dos parâmetros
+        const { id } = req.params;
+        // Extrai o userId do token
         const userId = req.user.userId;
-
-         // Insere o usuário
+        // Exclui a tarefa do banco
         db.run('DELETE FROM tarefas WHERE id = ? AND userId = ?', [id, userId], function (err) {
-            //verifica se houve algum erro
+            // Verifica se houve erro
             if (err) {
-                return res.status(500).json({ message: 'Erro ao editar a tarefa' });
+                // Loga o erro
+                console.error('Erro ao excluir tarefa:', err);
+                // Retorna erro 500
+                return res.status(500).json({ message: 'Erro ao excluir tarefa' });
             }
-            // verificar se a tarefa foi atualizada
-            if (this.change === 0) {
-                return res.status(404).json({ message: 'Tarefa não encontrada' });
+            // Verifica se alguma tarefa foi excluída
+            if (this.changes === 0) {
+                // Retorna erro 404
+                return res.status(404).json({ message: 'Tarefa não encontrada ou não pertence ao usuário' });
             }
-            res.json({ message: 'Tarefa deletada com sucesso'});                   
+            // Retorna sucesso
+            res.json({ message: 'Tarefa excluída com sucesso' });
         });
+    });
 
-
-     });
-
-     return router;
-}
+    // Retorna o roteador configurado
+    return router;
+};

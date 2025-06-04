@@ -13,6 +13,10 @@ const Tarefas = () => {
     const [titulo, setTitulo] = useState('');
     // Estado para mensagens de feedback (sucesso ou erro)
     const [message, setMessage] = useState('');
+    //Estado para o ID da tarefa sendo editada
+    const [editando, setEditando] = useState('');
+    // Estado para o título já editado
+    const [tituloEditado, setTituloEditado] = useState('');
     // Hook de navegação para redirecionar
     const navigate = useNavigate();
 
@@ -111,7 +115,7 @@ const Tarefas = () => {
         //definindo o id da tarefa sendo editada
         setEditando(tarefa.id);
         //Preenchendo o título a ser editado
-        setTituloeditando(tarefa.titulo);
+        setTituloEditado(tarefa.titulo);
     };
 
     const handleSaveEdit = async (id) => {
@@ -125,14 +129,14 @@ const Tarefas = () => {
                 return;
             }
             // Fazendo requisição PUT para editar a tarefa
-            const response = await axios.put(`http://localhost:3001/api/tarefas/${id}`, {titulo: tituloEditando}, { headers: { Authorization: `Bearer ${token}` }
+            const response = await axios.put(`http://localhost:3001/api/tarefas/${id}`, {titulo: tituloEditado}, { headers: { Authorization: `Bearer ${token}` }
             });
             // Exibindo mensagem de sucesso
             setMessage(`Sucesso: ${response.data.message}`);
             //encerrando o módulo de editar
              setEditando(null);
              // limpando o título editado
-             setTituloeditando('');
+             setTituloEditado('');
             // Atualizando a lista de tarefas
             fetchTarefas();
         } catch (error) { // Garantindo que 'error' está definido
@@ -146,7 +150,7 @@ const Tarefas = () => {
         //encerrando o módulo de editar
         setEditando(null);
         // limpando o título editado
-        setTituloeditando('');
+        setTituloEditado('');
     };
 
 
@@ -177,21 +181,31 @@ const Tarefas = () => {
                 <button type="submit" className="btn btn-primary">Criar Tarefa</button>
             </form>
             {/* Lista de tarefas */}
-            <ul className="list-group">
-                {/* Mapeando as tarefas para exibir cada uma */}
-                {tarefas.map((tarefa) => (
+            <ul className="list-group">                
+                {Array.isArray(tarefas) && tarefas.length > 0 ? (
+                tarefas.map((tarefa) => tarefa.id ?(
                     // Item da lista com layout flexível
-                    <li key={tarefa.id} className="list-group-item d-flex justify-content-between align-items-center">
-                        {/* Exibindo o título da tarefa */}
-                        {tarefa.titulo}
-                        {/* Botão para excluir a tarefa */}
-                        <button  className="btn btn-danger btn-sm"
-                            onClick={() => handleEdit(tarefa)} // Chamando handleDelete
-                        > Editar </button>
-                        <button className="btn btn-danger btn-sm"  onClick={() => handleDelete(tarefa.id)} // Chamando handleDelete
-                        > Excluir</button>
-                    </li>
-                ))}
+                    <li key={tarefa.id} className={"list-group-item d-flex justify-content-between align-items-center ${editando === tarefa.id ? 'editando' : ''}"}>
+                        {editando === tarefa.id ? (
+                            <div className='w-100'>
+                                <input type='text' className='form-control mb-2' value={tituloEditado} onChange={(e) => setTituloEditado(e.target.value)} required/>
+                                <button className='btn btn-success' onClick={() => handleSaveEdit(tarefa.id)}>Salvar</button>
+                                <button className='btn btn-danger' onClick={() => handleCancelEdit(tarefa.id)}>Cancelar</button>
+                            </div>                            
+                        ) : (
+                            <>
+                            {tarefa.titulo || 'Título não disponível'}
+                            <div>
+                                <button className='btn btn-success' onClick={() => handleEdit(tarefa)}>Editar</button>
+                                <button className="btn btn-danger btn-sm"  onClick={() => handleDelete(tarefa.id)} // Chamando handleDelete
+                            > Excluir</button>
+                            </div> 
+                            </>                    
+                         )} 
+                    </li> 
+                ) : null )) : (
+                    <li className='list-group text-center'>Nenhuma tarefa disponível</li>
+                )}  
             </ul>
         </div>
     );     

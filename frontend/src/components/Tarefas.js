@@ -105,6 +105,51 @@ const Tarefas = () => {
         }
     };
 
+    //função para iniciar a edição de uma tarefa
+
+    const handleEdit = (tarefa) => {
+        //definindo o id da tarefa sendo editada
+        setEditando(tarefa.id);
+        //Preenchendo o título a ser editado
+        setTituloeditando(tarefa.titulo);
+    };
+
+    const handleSaveEdit = async (id) => {
+         try {
+            // Obtendo o token
+            const token = localStorage.getItem('token');
+            // Verificando se o token existe
+            if (!token) {
+                setMessage('Erro: Você precisa estar logado');
+                navigate('/login');
+                return;
+            }
+            // Fazendo requisição PUT para editar a tarefa
+            const response = await axios.put(`http://localhost:3001/api/tarefas/${id}`, {titulo: tituloEditando}, { headers: { Authorization: `Bearer ${token}` }
+            });
+            // Exibindo mensagem de sucesso
+            setMessage(`Sucesso: ${response.data.message}`);
+            //encerrando o módulo de editar
+             setEditando(null);
+             // limpando o título editado
+             setTituloeditando('');
+            // Atualizando a lista de tarefas
+            fetchTarefas();
+        } catch (error) { // Garantindo que 'error' está definido
+            // Exibindo mensagem de erro
+            setMessage(`Erro: ${error.response?.data?.message || 'Falha ao editar a tarefa'}`);
+        }
+    };
+
+    //função para cancelar a edição
+    const handleCancelEdit = () => {
+        //encerrando o módulo de editar
+        setEditando(null);
+        // limpando o título editado
+        setTituloeditando('');
+    };
+
+
     // Renderizando o componente
     return (
         // Container principal com margem superior
@@ -140,17 +185,17 @@ const Tarefas = () => {
                         {/* Exibindo o título da tarefa */}
                         {tarefa.titulo}
                         {/* Botão para excluir a tarefa */}
-                        <button
-                            className="btn btn-danger btn-sm"
-                            onClick={() => handleDelete(tarefa.id)} // Chamando handleDelete
-                        >
-                            Excluir
-                        </button>
+                        <button  className="btn btn-danger btn-sm"
+                            onClick={() => handleEdit(tarefa)} // Chamando handleDelete
+                        > Editar </button>
+                        <button className="btn btn-danger btn-sm"  onClick={() => handleDelete(tarefa.id)} // Chamando handleDelete
+                        > Excluir</button>
                     </li>
                 ))}
             </ul>
         </div>
-    );
+    );     
+
 };
 
 // Exportando o componente

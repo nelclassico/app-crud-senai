@@ -12,6 +12,11 @@ const sqlite3 = require('sqlite3').verbose();
 
 // Cria uma instância do servidor Express
 const app = express();
+app.use(cors({
+    origin: ['http://localhost:3000', 'capacitor://localhost', 'http://localhost'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Configura o middleware CORS para permitir requisições do frontend (localhost:3000)
 app.use(cors());
@@ -92,6 +97,7 @@ app.use('/api/tarefas', tarefasRouter);
 const PORT = 3001;
 
 // Inicia o servidor na porta especificada
+const port = process.env.PORT || 3001;
 app.listen(PORT, () => {
     // Loga mensagem de inicialização
     console.log(`Servidor rodando na porta ${PORT}. Acesse http://localhost:${PORT}`);

@@ -13,7 +13,7 @@ const sqlite3 = require('sqlite3').verbose();
 // Cria uma instância do servidor Express
 const app = express();
 app.use(cors({
-    origin: ['http://localhost:3000', 'capacitor://localhost', 'http://localhost'],
+    origin: ['capacitor://localhost', 'http://localhost:3000', '*'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -98,10 +98,7 @@ const PORT = 3001;
 
 // Inicia o servidor na porta especificada
 const port = process.env.PORT || 3001;
-app.listen(PORT, () => {
-    // Loga mensagem de inicialização
-    console.log(`Servidor rodando na porta ${PORT}. Acesse http://localhost:${PORT}`);
-});
+app.listen(port, () => console.log(`Servidor rodando na porta ${port}`));
 
 // Lida com o encerramento do servidor (ex.: Ctrl+C)
 process.on('SIGINT', () => {

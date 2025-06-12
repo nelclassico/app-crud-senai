@@ -13,13 +13,13 @@ const sqlite3 = require('sqlite3').verbose();
 // Cria uma instância do servidor Express
 const app = express();
 app.use(cors({
-    origin: ['capacitor://localhost', 'http://localhost:3000', '*'],
+    origin: ['capacitor://10.107.60.12', 'http://10.107.60.12:3000', '*'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Configura o middleware CORS para permitir requisições do frontend (localhost:3000)
-app.use(cors());
+// Configura o middleware CORS para permitir requisições do frontend (10.107.60.12:3000)
+
 // Configura o middleware para processar requisições com corpo JSON
 app.use(bodyParser.json());
 

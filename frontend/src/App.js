@@ -2,7 +2,9 @@
 // Objetivo: Criar a estrutura do app com rotas para registro e login
 
 // Importa o React para criar componentes
-import React from 'react';
+import { useEffect } from 'react';
+import { initDB } from './services/db';
+
 // Importa componentes de navegação
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 // Importa os componentes
@@ -14,6 +16,9 @@ import './App.css';
 
 // Define o componente App
 function App() {
+    useEffect(() => {
+        initDB();
+    }, []);
     // Renderiza o componente
     return (
         <Router>

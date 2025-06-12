@@ -1,75 +1,54 @@
-// Aula: Criando o componente de login
-// Objetivo: Criar um formulário para autenticar usuários via API
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { login } from '../services/db';
 
-// Importa o React e useState para gerenciar estado
-import React, { useState } from 'react';
-// Importa o axios para fazer requisições HTTP
-import axios from 'axios';
-
-// Define o componente Login
-const Login = () => {
-    // Estado para o email
+function Login() {
     const [email, setEmail] = useState('');
-    // Estado para a senha
-    const [password, setPassword] = useState('');
-    // Estado para a mensagem de resposta
+    const [senha, setSenha] = useState('');
     const [message, setMessage] = useState('');
+    const navigate = useNavigate();
 
-    // Função para lidar com o envio do formulário
-    const handleSubmit = async (e) => {
-        // Impede o comportamento padrão do formulário
+    const handleLogin = async (e) => {
         e.preventDefault();
+        console.log('Tentando login com:', { email, senha });
         try {
-            // Faz uma requisição POST para a rota de login
-            const response = await axios.post('http://localhost:3001/api/auth/login', { email, password });
-            // Armazena o token no localStorage
-            localStorage.setItem('token', response.data.token);
-            // Define a mensagem de sucesso
-            setMessage(`Sucesso: ${response.data.message} (ID: ${response.data.userId})`);
-            // Limpa os campos
-            setEmail('');
-            setPassword('');
+            const user = await login(email, senha);
+            console.log('Usuário logado:', user);
+            localStorage.setItem('token', user.token);
+            localStorage.setItem('userId', user.id);
+            navigate('/tarefas');
+            setMessage('Sucesso: Login bem-sucedido');
         } catch (error) {
-            // Define a mensagem de erro
-            setMessage(`Erro: ${error.response?.data?.message || 'Falha ao logar'}`);
+            console.error('Erro no login:', error);
+            setMessage(`Erro: ${error.message || 'Falha ao logar'}`);
         }
     };
 
-    // Renderiza o componente
     return (
-        <div className="container mt-4">
-            <h2 className="text-center">Login</h2>
-            {/* Exibe a mensagem de resposta */}
-            {message && <div className="alert alert-info">{message}</div>}
-            {/* Formulário de login */}
-            <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                    <label htmlFor="email" className="form-label">Email</label>
-                    <input
-                        type="email"
-                        className="form-control"
-                        id="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="mb-3">
-                    <label htmlFor="password" className="form-label">Senha</label>
-                    <input
-                        type="password"
-                        className="form-control"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                    />
-                </div>
-                <button type="submit" className="btn btn-primary">Logar</button>
+        <div class="container">
+            <h2>Login</h2>
+            <form onSubmit={handleLogin} class="form">
+                <input
+                    class="form-control"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
+                    required
+                />
+                <input
+                    class="form-control"
+                    type="password"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    placeholder="Senha"
+                    required
+                />
+                <button type="submit" class="btn btn-success">Entrar</button>
             </form>
+            <p>{message}</p>
         </div>
     );
-};
+}
 
-// Exporta o componente
 export default Login;
